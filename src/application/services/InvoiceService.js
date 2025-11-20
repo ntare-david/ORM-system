@@ -3,7 +3,7 @@
  * Orchestrates invoice business logic
  */
 
-import { Invoice } from '@domain/entities'
+import { Invoice } from '../../domain/entities'
 
 export class InvoiceService {
   constructor(invoiceRepository) {

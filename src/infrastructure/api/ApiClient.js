@@ -4,7 +4,7 @@
  */
 
 import axios from 'axios'
-import { handleApiError } from '@utils/errorHandler'
+import { handleApiError } from '../../utils/errorHandler'
 
 export class ApiClient {
   constructor(config = {}) {

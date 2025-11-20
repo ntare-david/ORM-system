@@ -6,7 +6,7 @@
 import { ApiClient } from './api/ApiClient'
 import { TokenService } from './services/TokenService'
 import { InvoiceRepository, ProductRepository, AuthRepository } from './repositories'
-import { InvoiceService, ProductService, AuthService } from '@application/services'
+import { InvoiceService, ProductService, AuthService } from '../application/services'
 
 class ServiceContainer {
   constructor() {

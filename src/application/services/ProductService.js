@@ -3,7 +3,7 @@
  * Orchestrates product business logic
  */
 
-import { Product } from '@domain/entities'
+import { Product } from '../../domain/entities'
 
 export class ProductService {
   constructor(productRepository) {

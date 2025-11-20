@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project follows Clean Architecture principles with clear separation of concerns across layers.
+This project follows Clean Architecture principles with clear separation of concerns across layers. The codebase is organized by **feature/domain modules** rather than by technical type, making it scalable and maintainable for an ERP system.
 
 ## Architecture Layers
 
@@ -95,7 +95,7 @@ export class InvoiceRepository {
 }
 ```
 
-### 4. UI Layer (`src/ui/` or `src/modules/`)
+### 4. UI Layer (`src/modules/` and `src/shared/`)
 **Purpose**: Contains React components and presentation logic.
 
 **Structure**:
@@ -104,7 +104,15 @@ modules/
   └── [feature]/
       ├── components/  # Feature-specific components
       ├── hooks/       # Feature-specific hooks
+      ├── services/    # API adapters
+      ├── types/       # Type definitions
       └── pages/       # Feature pages
+
+shared/
+  ├── components/      # Shared UI components
+  ├── contexts/        # Domain-specific contexts
+  ├── hooks/           # Shared hooks
+  └── utils/           # Shared utilities
 ```
 
 **Key Principles**:
@@ -115,26 +123,25 @@ modules/
 
 ## Feature-Based Module Structure
 
-Organize code by feature/domain, not by type:
+Organize code by feature/domain, not by type. Each module is self-contained:
 
 ```
 src/modules/
-  ├── inventory/
-  │   ├── components/
-  │   ├── hooks/
-  │   ├── services/    # Module-specific use cases
-  │   └── pages/
+  ├── accounting/
+  │   ├── components/    # Presentational components
+  │   ├── hooks/         # Data fetching hooks
+  │   ├── services/      # API adapters
+  │   ├── types/         # Type definitions (JSDoc)
+  │   └── pages/         # Page components
   ├── crm/
-  │   ├── components/
-  │   ├── hooks/
-  │   ├── services/
-  │   └── pages/
-  └── sales/
-      ├── components/
-      ├── hooks/
-      ├── services/
-      └── pages/
+  ├── inventory/
+  ├── sales/
+  ├── hr/
+  ├── workflow/
+  └── ai/
 ```
+
+See [MODULE_STRUCTURE.md](./MODULE_STRUCTURE.md) for detailed module structure guide.
 
 ## Dependency Flow
 
@@ -163,13 +170,19 @@ import { InvoiceRepository } from '@infrastructure/repositories'
 ## State Management
 
 ### Contexts by Domain
-Split contexts by feature/domain:
-- `AuthContext` - Authentication state
-- `InventoryContext` - Inventory state
-- `InvoiceContext` - Invoice state
+Split contexts by feature/domain in `shared/contexts/`:
+- `AuthContext` - Authentication state (in `contexts/`)
+- `AccountingContext` - Accounting state (in `shared/contexts/`)
+- `CrmContext` - CRM state (in `shared/contexts/`)
+- `InventoryContext` - Inventory state (in `shared/contexts/`)
+
+Each context provides:
+- Domain-specific state
+- Domain-specific actions
+- Loading/error states
 
 ### For Complex State
-Consider Redux Toolkit for:
+Consider Redux Toolkit or Zustand for:
 - Shared state across modules
 - Complex state logic
 - Time-travel debugging
@@ -220,14 +233,20 @@ export function useInvoices() {
 ## Testing Strategy
 
 ### Unit Tests
-- **Domain entities**: Test business rules
+- **Domain entities**: Test business rules (`__tests__/domain/entities/`)
+- **Value objects**: Test value object logic (`__tests__/domain/valueObjects/`)
 - **Use cases**: Test application logic
-- **Components**: Test UI behavior
+- **Components**: Test UI behavior with React Testing Library
 
 ### Integration Tests
 - Test workflows end-to-end
 - Test API integrations
 - Test user flows
+
+### Test Setup
+- Jest + React Testing Library configured
+- Test files: `__tests__/` or `*.test.js`
+- Coverage reports available
 
 ## Creating a New Module
 
@@ -285,6 +304,27 @@ export function useInvoices() {
 4. **Document use cases**: Each service should have clear documentation
 5. **Follow single responsibility**: Each class/function does one thing
 6. **Use interfaces/contracts**: Define clear contracts between layers
+7. **Lazy load modules**: Use React.lazy for code splitting
+8. **Use error boundaries**: Catch UI errors gracefully
+9. **Define types**: Use JSDoc for type definitions
+10. **Organize by feature**: Keep related code together
+
+## Performance Optimizations
+
+### Code Splitting
+- Route-based: Lazy load pages/modules
+- Component-based: Lazy load heavy components
+- Use React.lazy + Suspense
+
+### Memoization
+- Use React.memo for expensive components
+- Use useMemo for expensive calculations
+- Use useCallback for stable function references
+
+### Error Boundaries
+- Wrap routes in ErrorBoundary
+- Provide fallback UI
+- Log errors for debugging
 
 ## Migration Guide
 
