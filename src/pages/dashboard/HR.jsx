@@ -2,6 +2,7 @@ import { Routes, Route, Link } from 'react-router-dom'
 import { Plus, RefreshCw, AlertCircle } from 'lucide-react'
 import { DataTable } from '../../components/DataTable'
 import { TableSkeleton } from '../../components/Skeleton'
+import { EmployeeForm } from '../../components/EmployeeForm'
 import Attendance from './Attendance'
 import Leaves from './Leaves'
 import { useState, useEffect, useCallback, useMemo, memo } from 'react'
@@ -12,13 +13,15 @@ const Employees = memo(function Employees() {
   const [employees, setEmployees] = useState([])
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
 
   const loadEmployees = useCallback(async () => {
     try {
       setError(null)
       setLoading(true)
       const response = await apiClient.get('/hr/employees')
-      setEmployees(response.data || [])
+      const data = response.data || response || []
+      setEmployees(Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [])
     } catch (err) {
       const appError = handleApiError(err)
       const error = new Error(appError.message)
@@ -28,6 +31,16 @@ const Employees = memo(function Employees() {
       setLoading(false)
     }
   }, [])
+
+  const handleAddEmployee = async (employeeData) => {
+    try {
+      await apiClient.post('/hr/employees', employeeData)
+      setShowForm(false)
+      loadEmployees()
+    } catch (err) {
+      console.error('Failed to add employee:', err)
+    }
+  }
 
   useEffect(() => {
     loadEmployees()
@@ -47,7 +60,10 @@ const Employees = memo(function Employees() {
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Employees</h1>
-        <button className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
+        <button 
+          onClick={() => setShowForm(true)}
+          className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
+        >
           <Plus size={18} /> <span className="hidden sm:inline">New Employee</span><span className="sm:hidden">New</span>
         </button>
       </div>
@@ -87,6 +103,12 @@ const Employees = memo(function Employees() {
           data={tableData}
         />
       )}
+      
+      <EmployeeForm 
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        onSubmit={handleAddEmployee}
+      />
     </div>
   )
 })

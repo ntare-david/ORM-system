@@ -13,6 +13,7 @@ import Home from './pages/Home'
 // Lazy load dashboard components for code splitting
 const Login = lazy(() => import('./pages/Login'))
 const Signup = lazy(() => import('./pages/Signup'))
+const Onboarding = lazy(() => import('./pages/Onboarding'))
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'))
 const DashboardLayout = lazy(() => import('./pages/dashboard/Dashboard'))
 
@@ -53,6 +54,7 @@ export default function App() {
                           <Route path="/" element={<Home />} />
                           <Route path="/login" element={<Login />} />
                           <Route path="/signup" element={<Signup />} />
+                          <Route path="/onboarding" element={<Onboarding />} />
                           <Route path="/forgot-password" element={<ForgotPassword />} />
                           
                           <Route

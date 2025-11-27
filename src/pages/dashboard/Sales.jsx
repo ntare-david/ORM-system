@@ -2,6 +2,8 @@ import { Routes, Route, Link } from 'react-router-dom'
 import { Plus, RefreshCw, AlertCircle } from 'lucide-react'
 import { DataTable } from '../../components/DataTable'
 import { TableSkeleton } from '../../components/Skeleton'
+import { ProductForm } from '../../components/ProductForm'
+import { OrderForm } from '../../components/OrderForm'
 import Pricelists from './Pricelists'
 import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { salesApi } from '../../api/sales'
@@ -11,13 +13,16 @@ const Products = memo(function Products() {
   const [products, setProducts] = useState([])
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editingProduct, setEditingProduct] = useState(null)
 
   const loadProducts = useCallback(async () => {
     try {
       setError(null)
       setLoading(true)
       const response = await salesApi.getProducts()
-      setProducts(response.data || [])
+      const data = response.data || response || []
+      setProducts(Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [])
     } catch (err) {
       const appError = handleApiError(err)
       const error = new Error(appError.message)
@@ -28,6 +33,37 @@ const Products = memo(function Products() {
     }
   }, [])
 
+  const handleAddProduct = async (productData) => {
+    try {
+      if (editingProduct) {
+        await salesApi.updateProduct(editingProduct.id, productData)
+      } else {
+        await salesApi.createProduct(productData)
+      }
+      setShowForm(false)
+      setEditingProduct(null)
+      loadProducts()
+    } catch (err) {
+      console.error('Failed to save product:', err)
+    }
+  }
+
+  const handleEditProduct = (product) => {
+    setEditingProduct(product)
+    setShowForm(true)
+  }
+
+  const handleDeleteProduct = async (product) => {
+    if (confirm('Are you sure you want to delete this product?')) {
+      try {
+        await salesApi.deleteProduct(product.id)
+        loadProducts()
+      } catch (err) {
+        console.error('Failed to delete product:', err)
+      }
+    }
+  }
+
   useEffect(() => {
     loadProducts()
   }, [loadProducts])
@@ -37,7 +73,7 @@ const Products = memo(function Products() {
       id: prod.id,
       name: prod.name,
       category: prod.category || 'N/A',
-      price: `$${prod.price?.toLocaleString() || '0'}`,
+      price: `${prod.price?.toLocaleString() || '0'} RWF`,
       stock: prod.stock || 0,
     }))
   }, [products])
@@ -46,7 +82,10 @@ const Products = memo(function Products() {
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Products</h1>
-        <button className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
+        <button 
+          onClick={() => setShowForm(true)}
+          className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
+        >
           <Plus size={18} /> <span className="hidden sm:inline">New Product</span><span className="sm:hidden">New</span>
         </button>
       </div>
@@ -84,8 +123,20 @@ const Products = memo(function Products() {
             { key: 'stock', label: 'Stock' },
           ]}
           data={tableData}
+          onEdit={handleEditProduct}
+          onDelete={handleDeleteProduct}
         />
       )}
+      
+      <ProductForm 
+        isOpen={showForm}
+        onClose={() => {
+          setShowForm(false)
+          setEditingProduct(null)
+        }}
+        onSubmit={handleAddProduct}
+        editData={editingProduct}
+      />
     </div>
   )
 })
@@ -94,13 +145,15 @@ const Orders = memo(function Orders() {
   const [orders, setOrders] = useState([])
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
 
   const loadOrders = useCallback(async () => {
     try {
       setError(null)
       setLoading(true)
       const response = await salesApi.getOrders()
-      setOrders(response.data || [])
+      const data = response.data || response || []
+      setOrders(Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [])
     } catch (err) {
       const appError = handleApiError(err)
       const error = new Error(appError.message)
@@ -111,6 +164,16 @@ const Orders = memo(function Orders() {
     }
   }, [])
 
+  const handleAddOrder = async (orderData) => {
+    try {
+      await salesApi.createOrder(orderData)
+      setShowForm(false)
+      loadOrders() // Refresh the list
+    } catch (err) {
+      console.error('Failed to add order:', err)
+    }
+  }
+
   useEffect(() => {
     loadOrders()
   }, [loadOrders])
@@ -119,7 +182,7 @@ const Orders = memo(function Orders() {
     return orders.map(order => ({
       id: order.id,
       customer: order.customer || 'N/A',
-      total: `$${order.total?.toLocaleString() || '0'}`,
+      total: `${order.total?.toLocaleString() || '0'} RWF`,
       status: order.status || 'Pending',
       date: order.date ? new Date(order.date).toLocaleDateString() : 'N/A',
     }))
@@ -129,7 +192,10 @@ const Orders = memo(function Orders() {
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Sales Orders</h1>
-        <button className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
+        <button 
+          onClick={() => setShowForm(true)}
+          className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
+        >
           <Plus size={18} /> <span className="hidden sm:inline">New Order</span><span className="sm:hidden">New</span>
         </button>
       </div>
@@ -169,6 +235,12 @@ const Orders = memo(function Orders() {
           data={tableData}
         />
       )}
+      
+      <OrderForm 
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        onSubmit={handleAddOrder}
+      />
     </div>
   )
 })

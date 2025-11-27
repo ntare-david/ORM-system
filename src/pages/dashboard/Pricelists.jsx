@@ -1,6 +1,7 @@
 import { Plus, RefreshCw, AlertCircle } from 'lucide-react'
 import { DataTable } from '../../components/DataTable'
 import { TableSkeleton } from '../../components/Skeleton'
+import { PricelistForm } from '../../components/PricelistForm'
 import { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { salesApi } from '../../api/sales'
 import { handleApiError } from '../../utils/errorHandler'
@@ -9,13 +10,15 @@ const Pricelists = memo(function Pricelists() {
   const [pricelists, setPricelists] = useState([])
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
 
   const loadPricelists = useCallback(async () => {
     try {
       setError(null)
       setLoading(true)
       const response = await salesApi.getPricelists()
-      setPricelists(response.data || [])
+      const data = response.data || response || []
+      setPricelists(Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [])
     } catch (err) {
       const appError = handleApiError(err)
       const error = new Error(appError.message)
@@ -25,6 +28,16 @@ const Pricelists = memo(function Pricelists() {
       setLoading(false)
     }
   }, [])
+
+  const handleAddPricelist = async (pricelistData) => {
+    try {
+      await salesApi.createPricelist(pricelistData)
+      setShowForm(false)
+      loadPricelists()
+    } catch (err) {
+      console.error('Failed to add pricelist:', err)
+    }
+  }
 
   useEffect(() => {
     loadPricelists()
@@ -44,7 +57,10 @@ const Pricelists = memo(function Pricelists() {
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Pricelists</h1>
-        <button className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
+        <button 
+          onClick={() => setShowForm(true)}
+          className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
+        >
           <Plus size={18} /> <span className="hidden sm:inline">New Pricelist</span><span className="sm:hidden">New</span>
         </button>
       </div>
@@ -84,6 +100,12 @@ const Pricelists = memo(function Pricelists() {
           data={tableData}
         />
       )}
+      
+      <PricelistForm 
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        onSubmit={handleAddPricelist}
+      />
     </div>
   )
 })

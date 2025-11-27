@@ -2,6 +2,7 @@ import { Routes, Route, Link } from 'react-router-dom'
 import { Plus, RefreshCw, AlertCircle } from 'lucide-react'
 import { DataTable } from '../../components/DataTable'
 import { TableSkeleton } from '../../components/Skeleton'
+import { CustomerForm } from '../../components/CustomerForm'
 import Pipeline from './Pipeline'
 import Opportunities from './Opportunities'
 import { useState, useEffect, useCallback, useMemo, memo } from 'react'
@@ -12,13 +13,15 @@ const Leads = memo(function Leads() {
   const [leads, setLeads] = useState([])
   const [error, setError] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
 
   const loadLeads = useCallback(async () => {
     try {
       setError(null)
       setLoading(true)
-      const response = await apiClient.get('/crm/leads')
-      setLeads(response.data || [])
+      const response = await apiClient.get('/crm/customers')
+      const data = response.data || response || []
+      setLeads(Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [])
     } catch (err) {
       const appError = handleApiError(err)
       const error = new Error(appError.message)
@@ -28,6 +31,16 @@ const Leads = memo(function Leads() {
       setLoading(false)
     }
   }, [])
+
+  const handleAddCustomer = async (customerData) => {
+    try {
+      await apiClient.post('/crm/customers', customerData)
+      setShowForm(false)
+      loadLeads()
+    } catch (err) {
+      console.error('Failed to add customer:', err)
+    }
+  }
 
   useEffect(() => {
     loadLeads()
@@ -47,8 +60,11 @@ const Leads = memo(function Leads() {
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Leads</h1>
-        <button className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
-          <Plus size={18} /> <span className="hidden sm:inline">New Lead</span><span className="sm:hidden">New</span>
+        <button 
+          onClick={() => setShowForm(true)}
+          className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
+        >
+          <Plus size={18} /> <span className="hidden sm:inline">New Customer</span><span className="sm:hidden">New</span>
         </button>
       </div>
       
@@ -87,6 +103,12 @@ const Leads = memo(function Leads() {
           data={tableData}
         />
       )}
+      
+      <CustomerForm 
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        onSubmit={handleAddCustomer}
+      />
     </div>
   )
 })

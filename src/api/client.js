@@ -27,10 +27,25 @@ class ApiClient {
           localStorage.removeItem('auth_token')
           window.location.href = '/login'
         }
-        // Enhance error message for network errors
+        
+        // Enhanced error handling for connection issues
         if (error.code === 'ERR_NETWORK' || error.code === 'ECONNREFUSED' || error.message === 'Network Error') {
-          error.message = 'Unable to connect to the server. Please check your internet connection and ensure the backend server is running.'
+          const enhancedError = new Error(
+            'Cannot connect to backend server. Please ensure:\n' +
+            '1. Backend server is running (cd backend && start.bat)\n' +
+            '2. Server is accessible at http://localhost:8000\n' +
+            '3. No firewall is blocking the connection'
+          )
+          enhancedError.code = error.code
+          enhancedError.isNetworkError = true
+          return Promise.reject(enhancedError)
         }
+        
+        // Handle timeout errors
+        if (error.code === 'ECONNABORTED') {
+          error.message = 'Request timeout. The server may be overloaded or not responding.'
+        }
+        
         return Promise.reject(error)
       }
     )

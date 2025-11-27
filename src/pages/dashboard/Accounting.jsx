@@ -69,13 +69,47 @@ const Invoices = memo(function Invoices() {
 })
 
 const Payments = memo(function Payments() {
-  const { payments, error, loading, refetch } = usePayments()
+  const [payments, setPayments] = useState([])
+  const [error, setError] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+
+  const loadPayments = useCallback(async () => {
+    try {
+      setError(null)
+      setLoading(true)
+      const response = await apiClient.get('/accounting/payments')
+      const data = response.data || response || []
+      setPayments(Array.isArray(data.data) ? data.data : Array.isArray(data) ? data : [])
+    } catch (err) {
+      const appError = handleApiError(err)
+      const error = new Error(appError.message)
+      setError(error)
+      setPayments([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const handleAddPayment = async (paymentData) => {
+    try {
+      await apiClient.post('/accounting/payments', paymentData)
+      setShowForm(false)
+      loadPayments()
+    } catch (err) {
+      console.error('Failed to add payment:', err)
+    }
+  }
+
+  useEffect(() => {
+    loadPayments()
+  }, [loadPayments])
 
   const tableData = useMemo(() => {
     return payments.map(pay => ({
       id: pay.id,
       invoice: pay.invoice_id,
-      amount: `$${pay.amount.toLocaleString()}`,
+      amount: `${pay.amount?.toLocaleString() || '0'} RWF`,
       method: pay.method,
       date: new Date(pay.date).toLocaleDateString(),
     }))
@@ -85,7 +119,10 @@ const Payments = memo(function Payments() {
     <div className="space-y-4 p-4 md:p-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">Payments</h1>
-        <button className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto">
+        <button 
+          onClick={() => setShowForm(true)}
+          className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
+        >
           <Plus size={18} /> <span className="hidden sm:inline">Record Payment</span><span className="sm:hidden">Record</span>
         </button>
       </div>
@@ -105,7 +142,7 @@ const Payments = memo(function Payments() {
               {error.message}
             </p>
             <button
-              onClick={() => refetch()}
+              onClick={() => loadPayments()}
               className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
             >
               <RefreshCw size={18} />
@@ -125,6 +162,12 @@ const Payments = memo(function Payments() {
           data={tableData}
         />
       )}
+      
+      <PaymentForm 
+        isOpen={showForm}
+        onClose={() => setShowForm(false)}
+        onSubmit={handleAddPayment}
+      />
     </div>
   )
 })

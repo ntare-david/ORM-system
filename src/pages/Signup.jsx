@@ -24,19 +24,26 @@ export default function Signup() {
       return
     }
 
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long')
+      return
+    }
+
     setIsLoading(true)
     try {
       await signup(formData.email, formData.password, formData.name, formData.username)
-      navigate('/dashboard')
+      // Redirect to dashboard after successful signup
+      navigate('/dashboard', { replace: true })
     } catch (err) {
-      setError('Failed to create account')
+      console.error('Signup error:', err)
+      setError(err.response?.data?.detail || err.message || 'Failed to create account. Please try again.')
     } finally {
       setIsLoading(false)
     }
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-100 to-slate-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-950 flex items-center justify-center px-4">
       <div className="w-full max-w-md">
         <div className="card">
           <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-6">Create Account</h1>
